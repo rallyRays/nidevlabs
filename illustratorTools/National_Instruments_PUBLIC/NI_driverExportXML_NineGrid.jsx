@@ -318,6 +318,11 @@ function exportNineGridXML(destFolder, openFile) {
         for (var j = 0; j < svgElements.length(); j++) {
             var children = svgElements[j];
 
+            // store opacity or fill value from children if exists, added to path before parse below
+            if (children.attribute( "style" ).toString().indexOf( "opacity" ) != -1 || children.attribute( "style" ).toString().indexOf( "fill" ) != -1) {
+              styleAttribute = children.attribute( "style" );
+            }
+
             // layers are tagged with "g" localName
             // checking if layer visibility was turned off
             if (children.localName() == "g") {
@@ -338,51 +343,53 @@ function exportNineGridXML(destFolder, openFile) {
 
                 //  children element of path of type was found, compare path localName to case and parse path
             } else {
+              
+                // set style attribute on path before parsing
+                if (styleAttribute === undefined) {
+                    $.writeln( "WARNING : styleAttribute === undefined | setting to value to 1.0" );
+                    children.@style = "opacity:1.0;";
+                } else {
+                    children.@style = styleAttribute;
+                }              
+              
                 switch (children.localName()) {
-                case "circle":
-                    {
+                case "circle": {
                         paths = paths.concat(parseCircle(children, artboardName));
                         if (!passedFromG)
                             currentPathIndex++;
                         break;
                     }
-                case "ellipse":
-                    {
+                case "ellipse": {
                         paths = paths.concat(parseEllipse(children, artboardName));
                         if (!passedFromG)
                             currentPathIndex++;
                         break
                     }
-                case "rect":
-                    {
+                case "rect": {
                         paths = paths.concat(parseRect(children, artboardName));
                         if (!passedFromG)
                             currentPathIndex++;
                         break;
                     }
-                case "polygon":
-                    {
+                case "polygon": {
                         paths = paths.concat(parsePolygon(children, artboardName, boundingBoxes, currentPathIndex));
                         if (!passedFromG)
                             currentPathIndex++;
                         break;
                     }
-                case "polyline":
-                    {
+                case "polyline": {
                         paths = paths.concat(parsePolyline(children, artboardName, boundingBoxes, currentPathIndex));
                         if (!passedFromG)
                             currentPathIndex++;
                         break;
                     }
-                case "path":
-                    {
+                case "path": {
                         paths = paths.concat(parsePath(children, artboardName, boundingBoxes, currentPathIndex));
                         if (!passedFromG)
                             currentPathIndex++;
                         break;
                     }
-                case "line":
-                    {
+                case "line": {
                         paths = paths.concat(parseLine(children, artboardName));
                         if (!passedFromG)
                             currentPathIndex++;
@@ -400,13 +407,11 @@ function exportNineGridXML(destFolder, openFile) {
             var p = svgElements.toXMLString();
 
             switch (children.localName()) {
-            case "linearGradient":
-                {
+            case "linearGradient": {
                     colorList[artboardName].colors.push(parseLinearGradient(children, paths));
                     break;
                 }
-            case "radialGradient":
-                {
+            case "radialGradient": {
                     colorList[artboardName].colors.push(parseRadialGradient(children, paths));
                     break;
                 }
